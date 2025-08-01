@@ -4,6 +4,6 @@ package com.example.kinbo
 data class ShoppingItem(
     val id : Int,
     var name: String,
-    var quality: Int,
+    var quantity: Int,
     var isEditing: Boolean = false
 )
