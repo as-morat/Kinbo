@@ -1,38 +1,14 @@
 package com.example.kinbo
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -40,79 +16,89 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShoppingList() {
-
-    var shoppingItems by remember { mutableStateOf(emptyList<ShoppingItem>()) }
-    var newItemName by remember { mutableStateOf("") }
-    var newItemQuantity by remember { mutableDoubleStateOf(1.0) }
+    var shoppingItems by remember { mutableStateOf(listOf<ShoppingItem>()) }
+    var currentItemName by remember { mutableStateOf("") }
+    var currentItemQuantity by remember { mutableStateOf("1") }
     var showDialog by remember { mutableStateOf(false) }
+    var editItemId by remember { mutableStateOf<Int?>(null) }
 
-    Scaffold (
+    Scaffold(
         topBar = {
             TopAppBar(
-                { Text("Shopping List App") },
+                title = { Text("Shopping List App") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                {showDialog = true}
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Icon"
-                )
+            FloatingActionButton(onClick = {
+                currentItemName = ""
+                currentItemQuantity = "1"
+                editItemId = null
+                showDialog = true
+            }) {
+                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Item")
             }
         }
-    ){
-        innerPadding ->
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
-
             LazyColumn {
-
-                items(shoppingItems){
-                    item ->
-                        ShoppingListItem(
-                            item,
-                            {
-                                shoppingItems.map {
-                                    it.copy(isEditing = it.id == item.id)
-                                }
-                                shoppingItems.filter {
-                                    it.id != item.id
-                                }
-                            }
-                        ) { }
-                    }
+                items(shoppingItems) { item ->
+                    ShoppingListItem(
+                        item = item,
+                        onEdit = {
+                            currentItemName = it.name
+                            currentItemQuantity = it.quantity.toString()
+                            editItemId = it.id
+                            showDialog = true
+                        },
+                        onDelete = {
+                            shoppingItems = shoppingItems.filter { i -> i.id != it.id }
+                        }
+                    )
+                }
             }
 
-            if (showDialog){
+            if (showDialog) {
                 AddItemDialog(
-                    newItemName,
-                    newItemQuantity.toString(),
-                    {newItemName = it},
-                    {newItemQuantity = (it.toIntOrNull() ?: 1).toDouble() },
-                    {showDialog = false},
-                    {
-                        val quantity = newItemQuantity.toInt()
-                        shoppingItems = shoppingItems + ShoppingItem(
-                            shoppingItems.size+1,
-                            newItemName,
-                            quantity
-                        )
+                    itemName = currentItemName,
+                    itemQuantity = currentItemQuantity,
+                    onItemNameChange = { currentItemName = it },
+                    onItemQuantityChange = { currentItemQuantity = it },
+                    onDismiss = { showDialog = false },
+                    onConfirm = {
+                        val quantity = currentItemQuantity.toIntOrNull() ?: 1
+                        if (editItemId != null) {
+                            // Edit mode
+                            shoppingItems = shoppingItems.map {
+                                if (it.id == editItemId) {
+                                    it.name = currentItemName
+                                    it.quantity = quantity
+                                    it.isEditing = false
+                                }
+                                it
+                            }
+                        } else {
+                            // Add new item
+                            val newId = (shoppingItems.maxOfOrNull { it.id } ?: 0) + 1
+                            shoppingItems = shoppingItems + ShoppingItem(
+                                id = newId,
+                                name = currentItemName,
+                                quantity = quantity
+                            )
+                        }
+                        showDialog = false
                     }
-                ) { }
+                )
             }
         }
     }
 }
-
-
 
 @Composable
 fun AddItemDialog(
@@ -121,34 +107,38 @@ fun AddItemDialog(
     onItemNameChange: (String) -> Unit,
     onItemQuantityChange: (String) -> Unit,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-    function : () ->Unit
+    onConfirm: () -> Unit
 ) {
-
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {Text("Add new item")},
+        title = { Text("Add / Edit Item") },
         text = {
             Column {
                 OutlinedTextField(
                     value = itemName,
                     onValueChange = onItemNameChange,
-                    label = {Text("Item Name")},
+                    label = { Text("Item Name") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
-
                 )
                 Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = itemQuantity,
+                    onValueChange = onItemQuantityChange,
+                    label = { Text("Quantity") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         },
         confirmButton = {
-            TextButton(
-                {
-                    onConfirm()
-                    onDismiss()
-                }
-            ) {
-                Text("Add")
+            TextButton(onClick = onConfirm) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
             }
         }
     )
@@ -156,42 +146,35 @@ fun AddItemDialog(
 
 @Composable
 fun ShoppingListItem(
-    item : ShoppingItem,
-    onEdit : (ShoppingItem) -> Unit,
-    onDelete : (ShoppingItem) -> Unit
+    item: ShoppingItem,
+    onEdit: (ShoppingItem) -> Unit,
+    onDelete: (ShoppingItem) -> Unit
 ) {
     Card(
-        modifier = Modifier.padding(8.dp)
+        modifier = Modifier
+            .padding(8.dp)
+            .fillMaxWidth()
     ) {
-
-        Row (
+        Row(
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
-        ){
+        ) {
             Column {
                 Text(text = item.name, style = MaterialTheme.typography.titleMedium)
-                Text("Quantity: ${item.quantity}", style = MaterialTheme.typography.bodyMedium)
+                Text(text = "Quantity: ${item.quantity}", style = MaterialTheme.typography.bodyMedium)
             }
 
             Row {
-                IconButton(
-                    {onEdit(item)}
-                ) {
-                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit Icon")
+                IconButton(onClick = { onEdit(item) }) {
+                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
                 }
-            }
-
-            Row {
-                IconButton(
-                    {onDelete(item)}
-                ) {
-                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete Icon")
+                IconButton(onClick = { onDelete(item) }) {
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete")
                 }
             }
         }
-
     }
 }
