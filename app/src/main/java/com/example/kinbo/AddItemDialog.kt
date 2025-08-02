@@ -13,11 +13,12 @@ fun AddItemDialog(
     onItemNameChange: (String) -> Unit,
     onItemQuantityChange: (String) -> Unit,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
+    isEdit : Boolean
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add / Edit Item") },
+        title = { Text(if (isEdit) "Update Item" else "Add Item") },
         text = {
             Column {
                 OutlinedTextField(

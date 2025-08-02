@@ -5,20 +5,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShoppingList() {
     var shoppingItems by remember { mutableStateOf(listOf<ShoppingItem>()) }
     var currentItemName by remember { mutableStateOf("") }
-    var currentItemQuantity by remember { mutableStateOf("1") }
+    var currentItemQuantity by remember { mutableStateOf("") }
     var showDialog by remember { mutableStateOf(false) }
     var editItemId by remember { mutableStateOf<Int?>(null) }
 
@@ -34,7 +30,7 @@ fun ShoppingList() {
         floatingActionButton = {
             FloatingActionButton(onClick = {
                 currentItemName = ""
-                currentItemQuantity = "1"
+                currentItemQuantity = ""
                 editItemId = null
                 showDialog = true
             }) {
@@ -90,7 +86,8 @@ fun ShoppingList() {
                         currentItemName = ""
                         currentItemQuantity = "1"
                         editItemId = null
-                    }
+                    },
+                    isEdit = editItemId != null
                 )
             }
         }
