@@ -74,17 +74,11 @@ fun ShoppingList() {
                     onConfirm = {
                         val quantity = currentItemQuantity.toIntOrNull() ?: 1
                         if (editItemId != null) {
-                            // Edit mode
                             shoppingItems = shoppingItems.map {
-                                if (it.id == editItemId) {
-                                    it.name = currentItemName
-                                    it.quantity = quantity
-                                    it.isEditing = false
-                                }
-                                it
+                                if (it.id == editItemId) it.copy(name = currentItemName, quantity = quantity)
+                                else it
                             }
                         } else {
-                            // Add new item
                             val newId = (shoppingItems.maxOfOrNull { it.id } ?: 0) + 1
                             shoppingItems = shoppingItems + ShoppingItem(
                                 id = newId,
@@ -93,87 +87,11 @@ fun ShoppingList() {
                             )
                         }
                         showDialog = false
+                        currentItemName = ""
+                        currentItemQuantity = "1"
+                        editItemId = null
                     }
                 )
-            }
-        }
-    }
-}
-
-@Composable
-fun AddItemDialog(
-    itemName: String,
-    itemQuantity: String,
-    onItemNameChange: (String) -> Unit,
-    onItemQuantityChange: (String) -> Unit,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add / Edit Item") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = itemName,
-                    onValueChange = onItemNameChange,
-                    label = { Text("Item Name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedTextField(
-                    value = itemQuantity,
-                    onValueChange = onItemQuantityChange,
-                    label = { Text("Quantity") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("Save")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-fun ShoppingListItem(
-    item: ShoppingItem,
-    onEdit: (ShoppingItem) -> Unit,
-    onDelete: (ShoppingItem) -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .padding(8.dp)
-            .fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                Text(text = item.name, style = MaterialTheme.typography.titleMedium)
-                Text(text = "Quantity: ${item.quantity}", style = MaterialTheme.typography.bodyMedium)
-            }
-
-            Row {
-                IconButton(onClick = { onEdit(item) }) {
-                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
-                }
-                IconButton(onClick = { onDelete(item) }) {
-                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete")
-                }
             }
         }
     }
